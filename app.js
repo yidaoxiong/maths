@@ -50,7 +50,7 @@ function drawSpeedChart(days){
   const canvas=$('#speedChart'),ctx=canvas.getContext('2d'),points=days.slice(0,14).reverse().map(day=>({date:day.date,value:speedOf(day)})).filter(point=>point.value>0);
   const width=Math.max(260,canvas.clientWidth||560),height=130,dpr=window.devicePixelRatio||1;canvas.width=width*dpr;canvas.height=height*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,width,height);
   if(!points.length){ctx.fillStyle='#9aa6b8';ctx.font='12px Nunito, sans-serif';ctx.fillText('完成练习后，这里会画出你的口算速度曲线。',12,68);return;}
-  const pad={left:12,right:12,top:14,bottom:24},values=points.map(point=>point.value),min=Math.max(0,Math.min(...values)-1),max=Math.max(...values)+1),range=Math.max(1,max-min);
+  const pad={left:12,right:12,top:14,bottom:24},values=points.map(point=>point.value),min=Math.max(0,Math.min(...values)-1),max=Math.max(...values)+1,range=Math.max(1,max-min);
   ctx.strokeStyle='#dfeafb';ctx.lineWidth=1;ctx.setLineDash([3,4]);for(let i=0;i<3;i++){const y=pad.top+i*(height-pad.top-pad.bottom)/2;ctx.beginPath();ctx.moveTo(pad.left,y);ctx.lineTo(width-pad.right,y);ctx.stroke();}ctx.setLineDash([]);
   const pointX=index=>points.length===1?width/2:pad.left+index*(width-pad.left-pad.right)/(points.length-1),pointY=value=>pad.top+(max-value)/range*(height-pad.top-pad.bottom);
   ctx.beginPath();points.forEach((point,index)=>{const x=pointX(index),y=pointY(point.value);index?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.strokeStyle='#ff9770';ctx.lineWidth=3;ctx.lineCap='round';ctx.stroke();
