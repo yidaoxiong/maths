@@ -1,0 +1,8 @@
+name = "maths"
+pages_build_output_dir = "."
+compatibility_date = "2026-07-26"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "maths-practice-history"
+database_id = "30d08825-9dab-42ea-b37a-e4add3715c12"
