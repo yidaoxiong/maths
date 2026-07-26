@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>小小口算家</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div class="brand-mark">＋</div>
+      <div>
+        <p class="eyebrow">数学小练习</p>
+        <h1>小小口算家</h1>
+      </div>
+      <div class="streak"><span>今日练习</span><strong id="todayCount">0</strong> 题</div>
+    </header>
+
+    <section id="setupPanel" class="panel setup-panel">
+      <div class="section-heading">
+        <div><p class="eyebrow">准备开始</p><h2>选择你的练习</h2></div>
+        <span class="sparkle">✦</span>
+      </div>
+      <div class="control-block">
+        <label>运算类型</label>
+        <div class="choice-grid" id="operationChoices">
+          <button class="choice selected" data-operation="mixed">四则混合</button>
+          <button class="choice" data-operation="add">加法</button>
+          <button class="choice" data-operation="subtract">减法</button>
+          <button class="choice" data-operation="multiply">乘法</button>
+          <button class="choice" data-operation="divide">除法</button>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div class="control-block"><label for="difficulty">难度</label><select id="difficulty"><option value="easy">轻松（20以内）</option><option value="medium" selected>进阶（100以内）</option><option value="hard">挑战（1000以内）</option></select></div>
+        <div class="control-block"><label for="questionCount">题目数量</label><select id="questionCount"><option value="10">10 题</option><option value="20" selected>20 题</option><option value="30">30 题</option></select></div>
+      </div>
+      <button id="startButton" class="primary-button">开始练习 <span>→</span></button>
+    </section>
+
+    <section id="quizPanel" class="panel quiz-panel hidden">
+      <div class="quiz-meta"><span id="progressText">第 1 / 20 题</span><span class="timer">⏱ <b id="timer">00:00</b></span></div>
+      <div class="progress-track"><div id="progressBar"></div></div>
+      <div class="question-card"><p class="eyebrow">请计算</p><div id="questionText" class="question-text">8 + 7 = ?</div><div id="feedback" class="feedback" aria-live="polite"></div></div>
+      <form id="answerForm" class="answer-form"><label for="answerInput">你的答案</label><div class="answer-row"><input id="answerInput" type="number" inputmode="numeric" autocomplete="off" aria-label="输入答案" /><button class="primary-button" type="submit">确定</button></div></form>
+      <button id="quitButton" class="text-button">结束本次练习</button>
+    </section>
+
+    <section id="resultPanel" class="panel result-panel hidden">
+      <div class="result-badge">完成啦！</div><p class="eyebrow">本次练习结果</p><h2 id="resultTitle">表现很棒</h2>
+      <div class="score"><strong id="scoreText">0</strong><span> / <span id="totalText">20</span> 题正确</span></div>
+      <div class="result-stats"><div><strong id="accuracyText">0%</strong><span>正确率</span></div><div><strong id="timeText">00:00</strong><span>用时</span></div><div><strong id="mistakeText">0</strong><span>需要订正</span></div></div>
+      <div id="mistakeList" class="mistake-list"></div>
+      <div class="result-actions"><button id="retryButton" class="primary-button">再练一次 <span>↻</span></button><button id="homeButton" class="secondary-button">返回设置</button></div>
+    </section>
+    <footer>每天一点点，计算更准确 ✦</footer>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
