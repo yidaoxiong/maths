@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>小小口算家</title>
-  <link rel="stylesheet" href="styles.css?v=20260726-3" />
+  <link rel="stylesheet" href="styles.css?v=20260726-4" />
 </head>
 <body>
   <main class="app-shell">
@@ -51,10 +51,13 @@
       <div class="quiz-meta"><span id="progressText">第 1 / 20 题</span><span class="timer">⏱ <b id="timer">00:00</b></span></div>
       <div class="progress-track"><div id="progressBar"></div></div>
       <div class="question-card"><p class="eyebrow">请计算</p><div id="questionText" class="question-text">8 + 7 = ?</div><div id="feedback" class="feedback" aria-live="polite"></div></div>
-      <div class="voice-answer" aria-live="polite">
-        <p class="voice-label">直接说出答案</p>
-        <button id="voiceButton" class="voice-button" type="button" aria-label="开始语音回答"><span class="mic-icon">●</span><span id="voiceButtonText">点击话筒开始说</span></button>
-        <p id="voiceStatus" class="voice-status">例如：说“八十五”或“85”</p>
+      <div class="answer-options" aria-live="polite">
+        <form id="answerForm" class="manual-answer"><label for="answerInput">手动输入</label><div class="answer-row"><input id="answerInput" type="number" inputmode="numeric" autocomplete="off" aria-label="输入答案" placeholder="答案" /><button type="submit">确定</button></div></form>
+        <div class="voice-answer">
+          <p class="voice-label">或语音回答</p>
+          <button id="voiceButton" class="voice-button" type="button" aria-label="开始语音回答"><span class="mic-icon">●</span><span id="voiceButtonText">点击话筒开始说</span></button>
+          <p id="voiceStatus" class="voice-status">支持中文数字或阿拉伯数字</p>
+        </div>
       </div>
       <button id="quitButton" class="text-button">放弃本次练习</button>
     </section>
@@ -67,6 +70,6 @@
     </section>
     <footer>每天一点点，计算更准确 ✦</footer>
   </main>
-  <script src="app.js?v=20260726-3"></script>
+  <script src="app.js?v=20260726-4"></script>
 </body>
 </html>
