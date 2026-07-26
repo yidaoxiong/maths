@@ -51,7 +51,11 @@
       <div class="quiz-meta"><span id="progressText">第 1 / 20 题</span><span class="timer">⏱ <b id="timer">00:00</b></span></div>
       <div class="progress-track"><div id="progressBar"></div></div>
       <div class="question-card"><p class="eyebrow">请计算</p><div id="questionText" class="question-text">8 + 7 = ?</div><div id="feedback" class="feedback" aria-live="polite"></div></div>
-      <form id="answerForm" class="answer-form"><label for="answerInput">你的答案</label><div class="answer-row"><input id="answerInput" type="number" inputmode="numeric" autocomplete="off" aria-label="输入答案" /><button class="primary-button" type="submit">确定</button></div></form>
+      <div class="voice-answer" aria-live="polite">
+        <p class="voice-label">直接说出答案</p>
+        <button id="voiceButton" class="voice-button" type="button" aria-label="开始语音回答"><span class="mic-icon">●</span><span id="voiceButtonText">点击话筒开始说</span></button>
+        <p id="voiceStatus" class="voice-status">例如：说“八十五”或“85”</p>
+      </div>
       <button id="quitButton" class="text-button">放弃本次练习</button>
     </section>
 
