@@ -33,7 +33,13 @@ export async function onRequestGet({ request, env }) {
            SUM(total_questions) AS total,
            SUM(correct_answers) AS correct,
            SUM(elapsed_seconds) AS elapsed,
-           SUM(mistake_count) AS mistakes
+           SUM(mistake_count) AS mistakes,
+           COUNT(*) AS sessions,
+           ROUND(AVG(correct_answers * 100.0 / total_questions)) AS score,
+           CASE WHEN SUM(elapsed_seconds) > 0
+             THEN ROUND(SUM(total_questions) * 60.0 / SUM(elapsed_seconds), 1)
+             ELSE 0
+           END AS speed
       FROM practice_sessions
      WHERE client_id = ?
      GROUP BY practice_date
