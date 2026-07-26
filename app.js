@@ -22,14 +22,16 @@ function makeAddSubtract(){
   return question(72,38,34,'−','个位不够减，要向十位借 1');
 }
 function makeMultiplyDivide(){
-  if(Math.random()<.5){const a=rand(2,10),b=rand(2,10);return question(a,b,a*b,'×');}
-  const b=rand(2,10),answer=rand(2,10);return question(b*answer,b,answer,'÷');
+  if(Math.random()<.5){const b=rand(2,9),a=rand(10,Math.floor(99/b));return question(a,b,a*b,'×','两位数乘一位数，积不超过 99');}
+  const b=rand(2,9),answer=rand(Math.ceil(100/b),99);return question(b*answer,b,answer,'÷','三位数除以一位数，商不超过 99');
 }
 function makeSmart(){
-  const kind=rand(0,3);
+  const kind=rand(0,4);
   if(kind===0){const a=rand(2,9)*10+rand(1,9),b=10-a%10;return question(a,b,a+b,'＋','先把个位凑成 10');}
   if(kind===1){const a=rand(21,89);return question(a,100-a,100,'＋','把两个数凑成 100');}
+  if(kind===2){const a=rand(20,89),b=100-a;return question(100+a,b,200,'＋','先凑成整百，再加上多出的 100');}
   const patterns=[[25,4,100,'×','25 × 4 = 100'],[125,8,1000,'×','125 × 8 = 1000'],[25,12,300,'×','先算 25 × 4，再乘 3'],[25,16,400,'×','先算 25 × 4，再乘 4'],[100,25,4,'÷','100 ÷ 25 = 4'],[1000,125,8,'÷','1000 ÷ 125 = 8'],[300,25,12,'÷','300 ÷ 25 = 12'],[400,25,16,'÷','400 ÷ 25 = 16']];
+  patterns.push([99,7,693,'×','把 99 看成 100 − 1'],[101,8,808,'×','把 101 看成 100 + 1'],[25,36,900,'×','25 × 4 = 100，36 ÷ 4 = 9'],[125,24,3000,'×','125 × 8 = 1000，24 ÷ 8 = 3'],[50,18,900,'×','先算 5 × 18，再补一个 0'],[75,4,300,'×','75 × 4 = 300'],[900,25,36,'÷','把 25 看成 100 ÷ 4'],[3000,125,24,'÷','125 × 8 = 1000']);
   const [a,b,answer,symbol,tip]=patterns[rand(0,patterns.length-1)];return question(a,b,answer,symbol,tip);
 }
 function makeQuestion(){if(state.category==='multiply-divide')return makeMultiplyDivide();if(state.category==='smart')return makeSmart();return makeAddSubtract()}
@@ -43,10 +45,10 @@ function speedOf(day){return Number(day.speed??(Number(day.elapsed)>0?Number(day
 function formatSpeed(value){return value>0?`${value.toFixed(1)} 题/分`:'—'}
 
 function updateGoal(today){
-  const sessions=today?sessionsOf(today):0,score=today?scoreOf(today):null,remaining=Math.max(0,Math.ceil((summerDeadline-Date.now())/86400000));
+  const addDone=today?(Number(today.add_subtract_done)||0):0,multiplyDone=today?(Number(today.multiply_divide_done)||0):0,completed=addDone+multiplyDone,score=today?scoreOf(today):null,remaining=Math.max(0,Math.ceil((summerDeadline-Date.now())/86400000));
   $('#goalCountdown').textContent=remaining?`距离放假结束还有 ${remaining} 天`:'暑期目标已到期';
-  $('#todayCount').textContent=sessions;$('#todayScore').textContent=score===null?'—':score;$('#goalProgressBar').style.width=`${Math.min(100,sessions/2*100)}%`;
-  $('#goalProgressText').textContent=sessions>=2?'今天的 2 次打卡已完成，保持这个节奏！':sessions?`今天已完成 ${sessions}/2 次，再完成 ${2-sessions} 次即可达标。`:'今天还没有完成打卡，先开始第一组吧！';
+  $('#todayCount').textContent=completed;$('#todayScore').textContent=score===null?'—':score;$('#goalProgressBar').style.width=`${completed/2*100}%`;
+  $('#goalProgressText').textContent=completed===2?'今天的加减法和乘除法都已完成，保持这个节奏！':completed?`今天已完成 ${addDone?'加减法':'乘除法'}，再完成 ${addDone?'一组乘除法':'一组加减法'}即可达标。`:'今天先完成一组加减法和一组乘除法吧！';
 }
 function drawSpeedChart(days){
   const canvas=$('#speedChart'),ctx=canvas.getContext('2d'),points=days.slice(0,14).reverse().map(day=>({date:day.date,value:speedOf(day)})).filter(point=>point.value>0);
@@ -64,10 +66,10 @@ function updateHistory(days=[]){
   $('#todaySummary').textContent=today?`${today.total} 题 · ${sessionsOf(today)} 次`:'还未练习';$('#weekSummary').textContent=weekTotal?`${weekTotal} 题`:'0 题';updateGoal(today);drawSpeedChart(days);
   const speedDays=days.slice(0,14).reverse().filter(day=>speedOf(day)>0),latest=speedDays[speedDays.length-1],previous=speedDays[speedDays.length-2];
   $('#speedTrend').textContent=latest?formatSpeed(speedOf(latest)):'暂无数据';$('#speedChange').textContent=latest&&previous?`比上次 ${speedOf(latest)-speedOf(previous)>=0?'+':''}${(speedOf(latest)-speedOf(previous)).toFixed(1)} 题/分`:'完成不同日期的练习后，会看到速度变化';
-  $('#historyList').innerHTML=days.length?recent.map(day=>{const score=scoreOf(day);return `<div class="history-day"><span class="history-date">${formatDay(day.date)}</span><span class="history-detail">${sessionsOf(day)} 次打卡 · ${day.total} 题 · ${formatSpeed(speedOf(day))}</span><strong class="history-rate ${score<70?'needs-practice':''}">${score} 分</strong></div>`}).join(''):'<p class="history-empty">完成第一组练习后，这里会留下每天的学习足迹和速度变化。</p>';
+  $('#historyList').innerHTML=days.length?recent.map(day=>{const score=scoreOf(day),marks=`加${Number(day.add_subtract_done)?'✓':'—'} 乘${Number(day.multiply_divide_done)?'✓':'—'}`;return `<div class="history-day"><span class="history-date">${formatDay(day.date)}</span><span class="history-detail">${marks} · ${sessionsOf(day)} 次 · ${day.total} 题</span><strong class="history-rate ${score<70?'needs-practice':''}">${score} 分</strong></div>`}).join(''):'<p class="history-empty">完成第一组练习后，这里会留下每天的学习足迹和速度变化。</p>';
 }
 async function loadHistory(){try{const response=await fetch(`/api/history?clientId=${encodeURIComponent(deviceId())}`);if(!response.ok)throw new Error('history unavailable');const data=await response.json();updateHistory(data.days||[])}catch{updateGoal();$('#todaySummary').textContent='暂未同步';$('#weekSummary').textContent='—';$('#historyList').innerHTML='<p class="history-empty">学习档案正在准备中，稍后再试即可。</p>';drawSpeedChart([])}}
-async function saveSession(){try{await fetch('/api/history',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({clientId:deviceId(),date:localDate(),total:state.count,correct:state.score,elapsed:state.elapsed,mistakes:state.mistakes.length})});await loadHistory()}catch{}}
+async function saveSession(){try{await fetch('/api/history',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({clientId:deviceId(),date:localDate(),practiceType:state.category,total:state.count,correct:state.score,elapsed:state.elapsed,mistakes:state.mistakes.length})});await loadHistory()}catch{}}
 
 function setVoiceStatus(text,type=''){$('#voiceStatus').textContent=text;$('#voiceStatus').className=`voice-status ${type}`.trim()}
 function setVoiceButton(listening=false){const button=$('#voiceButton');button.classList.toggle('listening',listening);button.disabled=state.acceptingAnswer;$('#voiceButtonText').textContent=listening?'正在听，请说答案…':'点击话筒开始说'}
