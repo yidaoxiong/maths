@@ -10,44 +10,40 @@
   <main class="app-shell">
     <header class="topbar">
       <div class="brand-mark">＋</div>
-      <div>
-        <p class="eyebrow">数学小练习</p>
-        <h1>小小口算家</h1>
-      </div>
-      <div class="streak"><span>今日练习</span><strong id="todayCount">0</strong> 题</div>
+      <div><p class="eyebrow">数学小练习</p><h1>小小口算家</h1></div>
+      <div class="streak"><span>今日打卡</span><strong id="todayCount">0</strong> / 2 次</div>
     </header>
 
-    <section id="setupPanel" class="panel setup-panel">
-      <div class="section-heading">
-        <div><p class="eyebrow">准备开始</p><h2>选择你的练习</h2></div>
-        <span class="sparkle">✦</span>
+    <section id="goalPanel" class="panel goal-panel">
+      <div class="section-heading compact-heading">
+        <div><p class="eyebrow">暑期目标</p><h2>每天 2 次口算打卡</h2></div><span class="goal-icon">◎</span>
       </div>
+      <div class="goal-main">
+        <div class="goal-copy"><strong id="goalDeadline">坚持到 8 月 31 日</strong><span id="goalCountdown">正在计算剩余时间…</span></div>
+        <div class="goal-score"><span>今日评分</span><strong id="todayScore">—</strong><small>/ 100</small></div>
+      </div>
+      <div class="goal-progress"><div id="goalProgressBar"></div></div>
+      <p id="goalProgressText" class="goal-note">今天还没有完成打卡，先开始第一组吧！</p>
+    </section>
+
+    <section id="setupPanel" class="panel setup-panel">
+      <div class="section-heading"><div><p class="eyebrow">准备开始</p><h2>选择你的练习</h2></div><span class="sparkle">✦</span></div>
       <div class="control-block">
-        <label>运算类型</label>
-        <div class="choice-grid" id="operationChoices">
-          <button class="choice selected" data-operation="mixed">四则混合</button>
-          <button class="choice" data-operation="add">加法</button>
-          <button class="choice" data-operation="subtract">减法</button>
-          <button class="choice" data-operation="multiply">乘法</button>
-          <button class="choice" data-operation="divide">除法</button>
+        <label>题目类型</label>
+        <div class="choice-grid content-choices" id="operationChoices">
+          <button class="choice selected" data-operation="add-subtract"><strong>加减法</strong><span>100 以内 · 进退位</span></button>
+          <button class="choice" data-operation="multiply-divide"><strong>乘除法</strong><span>100 以内 · 五年级</span></button>
+          <button class="choice" data-operation="smart"><strong>技巧速算</strong><span>凑 10 / 100 · 25×4</span></button>
         </div>
       </div>
-      <div class="settings-row">
-        <div class="control-block"><label for="difficulty">难度</label><select id="difficulty"><option value="easy">轻松（20以内）</option><option value="medium" selected>进阶（100以内）</option><option value="hard">挑战（1000以内）</option></select></div>
-        <div class="control-block"><label for="questionCount">题目数量</label><select id="questionCount"><option value="10">10 题</option><option value="20" selected>20 题</option><option value="30">30 题</option></select></div>
-      </div>
+      <div class="control-block question-count"><label for="questionCount">题目数量</label><select id="questionCount"><option value="10">10 题</option><option value="20" selected>20 题</option><option value="30">30 题</option></select></div>
       <button id="startButton" class="primary-button">开始练习 <span>→</span></button>
     </section>
 
     <section id="historyPanel" class="panel history-panel">
-      <div class="section-heading compact-heading">
-        <div><p class="eyebrow">学习档案</p><h2>练习回顾</h2></div>
-        <span class="history-icon">▥</span>
-      </div>
-      <div class="history-overview">
-        <div><span>今天完成</span><strong id="todaySummary">正在读取…</strong></div>
-        <div><span>近 7 天</span><strong id="weekSummary">正在读取…</strong></div>
-      </div>
+      <div class="section-heading compact-heading"><div><p class="eyebrow">学习档案</p><h2>练习回顾</h2></div><span class="history-icon">▥</span></div>
+      <div class="history-overview"><div><span>今天完成</span><strong id="todaySummary">正在读取…</strong></div><div><span>近 7 天</span><strong id="weekSummary">正在读取…</strong></div></div>
+      <div class="speed-card"><div class="speed-heading"><div><span>速度进步曲线</span><strong id="speedTrend">暂无数据</strong></div><small id="speedChange">完成练习后会显示每分钟题数</small></div><canvas id="speedChart" height="130" aria-label="近 14 天口算速度变化曲线" role="img"></canvas></div>
       <div id="historyList" class="history-list" aria-live="polite"></div>
     </section>
 
@@ -56,15 +52,14 @@
       <div class="progress-track"><div id="progressBar"></div></div>
       <div class="question-card"><p class="eyebrow">请计算</p><div id="questionText" class="question-text">8 + 7 = ?</div><div id="feedback" class="feedback" aria-live="polite"></div></div>
       <form id="answerForm" class="answer-form"><label for="answerInput">你的答案</label><div class="answer-row"><input id="answerInput" type="number" inputmode="numeric" autocomplete="off" aria-label="输入答案" /><button class="primary-button" type="submit">确定</button></div></form>
-      <button id="quitButton" class="text-button">结束本次练习</button>
+      <button id="quitButton" class="text-button">放弃本次练习</button>
     </section>
 
     <section id="resultPanel" class="panel result-panel hidden">
       <div class="result-badge">完成啦！</div><p class="eyebrow">本次练习结果</p><h2 id="resultTitle">表现很棒</h2>
       <div class="score"><strong id="scoreText">0</strong><span> / <span id="totalText">20</span> 题正确</span></div>
       <div class="result-stats"><div><strong id="accuracyText">0%</strong><span>正确率</span></div><div><strong id="timeText">00:00</strong><span>用时</span></div><div><strong id="mistakeText">0</strong><span>需要订正</span></div></div>
-      <div id="mistakeList" class="mistake-list"></div>
-      <div class="result-actions"><button id="retryButton" class="primary-button">再练一次 <span>↻</span></button><button id="homeButton" class="secondary-button">返回设置</button></div>
+      <div id="mistakeList" class="mistake-list"></div><div class="result-actions"><button id="retryButton" class="primary-button">再练一次 <span>↻</span></button><button id="homeButton" class="secondary-button">返回设置</button></div>
     </section>
     <footer>每天一点点，计算更准确 ✦</footer>
   </main>
