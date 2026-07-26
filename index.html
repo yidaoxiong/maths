@@ -39,6 +39,18 @@
       <button id="startButton" class="primary-button">开始练习 <span>→</span></button>
     </section>
 
+    <section id="historyPanel" class="panel history-panel">
+      <div class="section-heading compact-heading">
+        <div><p class="eyebrow">学习档案</p><h2>练习回顾</h2></div>
+        <span class="history-icon">▥</span>
+      </div>
+      <div class="history-overview">
+        <div><span>今天完成</span><strong id="todaySummary">正在读取…</strong></div>
+        <div><span>近 7 天</span><strong id="weekSummary">正在读取…</strong></div>
+      </div>
+      <div id="historyList" class="history-list" aria-live="polite"></div>
+    </section>
+
     <section id="quizPanel" class="panel quiz-panel hidden">
       <div class="quiz-meta"><span id="progressText">第 1 / 20 题</span><span class="timer">⏱ <b id="timer">00:00</b></span></div>
       <div class="progress-track"><div id="progressBar"></div></div>
