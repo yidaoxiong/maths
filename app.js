@@ -46,6 +46,11 @@ function speedOf(day){return Number(day.speed??(Number(day.elapsed)>0?Number(day
 function formatSpeed(value){return value>0?`${value.toFixed(1)} 题/分`:'—'}
 
 function setAuthMessage(message,type=''){const el=$('#authMessage');el.textContent=message;el.className=`auth-message ${type}`.trim()}
+async function readAuthResponse(response){
+  const contentType=response.headers.get('content-type')||'';
+  if(!contentType.includes('application/json'))throw new Error('账号服务暂时没有正常响应，请稍后再试。');
+  return response.json();
+}
 function updateAccountUI(){
   $('#accountButtonText').textContent=accountUser?accountUser.username:'登录 / 注册';
   $('#authLoggedOut').classList.toggle('hidden',Boolean(accountUser));$('#authLoggedIn').classList.toggle('hidden',!accountUser);
@@ -58,7 +63,7 @@ async function submitAuth(action){
   const username=$('#usernameInput').value.trim(),password=$('#passwordInput').value;
   if(!username||!password){const missing=!username?$('#usernameInput'):$('#passwordInput');setAuthMessage(`请先填写${!username?'账号':'密码'}，再${action==='register'?'注册':'登录'}。`,'error');missing.focus();return;}
   setAuthMessage(action==='register'?'正在创建账号…':'正在登录…');
-  try{const response=await fetch('/api/auth',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action,username,password,clientId:deviceId()})});const data=await response.json();if(!response.ok)throw new Error(data.error||'操作未完成。');accountUser=data.user;$('#passwordInput').value='';updateAccountUI();setAuthMessage('登录成功，当前设备的旧记录已同步到账号。','success');await loadHistory();}catch(error){setAuthMessage(error.message||'操作未完成，请稍后再试。','error');}
+  try{const response=await fetch('/api/auth',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action,username,password,clientId:deviceId()})});const data=await readAuthResponse(response);if(!response.ok)throw new Error(data.error||'操作未完成。');accountUser=data.user;$('#passwordInput').value='';updateAccountUI();setAuthMessage('登录成功，当前设备的旧记录已同步到账号。','success');await loadHistory();}catch(error){setAuthMessage(error.message||'操作未完成，请稍后再试。','error');}
 }
 async function logout(){try{await fetch('/api/auth',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'logout'})});accountUser=null;updateAccountUI();setAuthMessage('已退出登录。');await loadHistory()}catch{setAuthMessage('退出失败，请稍后再试。','error')}}
 
