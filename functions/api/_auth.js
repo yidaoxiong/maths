@@ -41,6 +41,7 @@ export async function ensureAuthTables(db) {
       username TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
       password_salt TEXT NOT NULL,
+      password_scheme TEXT NOT NULL DEFAULT 'server-v1',
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )`),
     db.prepare(`CREATE TABLE IF NOT EXISTS auth_sessions (
@@ -51,6 +52,10 @@ export async function ensureAuthTables(db) {
     )`),
     db.prepare('CREATE INDEX IF NOT EXISTS auth_sessions_user_idx ON auth_sessions (user_id)'),
   ]);
+  const { results } = await db.prepare('PRAGMA table_info(users)').all();
+  if (!results.some(column => column.name === 'password_scheme')) {
+    await db.prepare("ALTER TABLE users ADD COLUMN password_scheme TEXT NOT NULL DEFAULT 'server-v1'").run();
+  }
 }
 
 export async function getSessionUser(request, db) {
@@ -82,5 +87,23 @@ export async function clearSession(request, db) {
 }
 
 export function validCredentials(username, password) {
-  return typeof username === 'string' && /^[A-Za-z0-9_\-\u4e00-\u9fff]{3,24}$/.test(username) && typeof password === 'string' && password.length >= 8 && password.length <= 72;
+  return validUsername(username) && typeof password === 'string' && password.length >= 8 && password.length <= 72;
+}
+
+export function validUsername(username) {
+  return typeof username === 'string' && /^[A-Za-z0-9_\-\u4e00-\u9fff]{3,24}$/.test(username);
+}
+
+export function validPasswordProof(value) {
+  return typeof value === 'string' && /^[A-Za-z0-9_-]{43}$/.test(value);
+}
+
+export function validPasswordSalt(value) {
+  return typeof value === 'string' && /^[A-Za-z0-9_-]{22}$/.test(value);
+}
+
+export function safeEqual(left, right) {
+  const a = encoder.encode(String(left));
+  const b = encoder.encode(String(right));
+  return a.length === b.length && crypto.subtle.timingSafeEqual(a, b);
 }
