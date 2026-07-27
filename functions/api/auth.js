@@ -16,7 +16,15 @@ export async function onRequestGet({ request, env }) {
   return json({ user: user || null });
 }
 
-export async function onRequestPost({ request, env }) {
+export async function onRequestPost(context) {
+  try {
+    return await handlePost(context);
+  } catch {
+    return json({ error: '账号服务暂时不可用，请稍后再试。' }, 503);
+  }
+}
+
+async function handlePost({ request, env }) {
   const body = await request.json().catch(() => null);
   if (!body || typeof body.action !== 'string') return json({ error: '请求无效。' }, 400);
   await ensureAuthTables(env.DB);
