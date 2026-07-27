@@ -46,6 +46,10 @@ function speedOf(day){return Number(day.speed??(Number(day.elapsed)>0?Number(day
 function formatSpeed(value){return value>0?`${value.toFixed(1)} 题/分`:'—'}
 
 function setAuthMessage(message,type=''){const el=$('#authMessage');el.textContent=message;el.className=`auth-message ${type}`.trim()}
+function bytesToBase64Url(bytes){let binary='';for(const byte of bytes)binary+=String.fromCharCode(byte);return btoa(binary).replaceAll('+','-').replaceAll('/','_').replaceAll('=','')}
+function base64UrlToBytes(value){const padded=value.replaceAll('-','+').replaceAll('_','/')+'='.repeat((4-value.length%4)%4);return Uint8Array.from(atob(padded),char=>char.charCodeAt(0))}
+function newPasswordSalt(){const bytes=new Uint8Array(16);crypto.getRandomValues(bytes);return bytesToBase64Url(bytes)}
+async function passwordProof(password,salt){const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);const bits=await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:base64UrlToBytes(salt),iterations:210000},key,256);return bytesToBase64Url(new Uint8Array(bits))}
 async function readAuthResponse(response){
   const contentType=response.headers.get('content-type')||'';
   if(!contentType.includes('application/json'))throw new Error('账号服务暂时没有正常响应，请稍后再试。');
@@ -59,11 +63,18 @@ function updateAccountUI(){
 function openAuth(){const panel=$('#authPanel');panel.classList.remove('hidden');updateAccountUI();panel.scrollIntoView({behavior:'smooth',block:'start'});if(!accountUser){setAuthMessage('注册成功后，本设备已有的练习记录会自动合并到账号。');requestAnimationFrame(()=>$('#usernameInput').focus());}}
 function closeAuth(){$('#authPanel').classList.add('hidden')}
 async function loadAuth(){try{const response=await fetch('/api/auth');const data=await response.json();accountUser=data.user||null;updateAccountUI()}catch{accountUser=null;updateAccountUI()}}
+async function authPayload(action,username,password){
+  if(action==='register'){const salt=newPasswordSalt();return {passwordProof:await passwordProof(password,salt),passwordSalt:salt};}
+  const challengeResponse=await fetch('/api/auth',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'challenge',username})});
+  const challenge=await readAuthResponse(challengeResponse);if(!challengeResponse.ok)throw new Error(challenge.error||'账号或密码不正确。');
+  if(challenge.scheme!=='client-v1')return {password};
+  return {passwordProof:await passwordProof(password,challenge.salt)};
+}
 async function submitAuth(action){
   const username=$('#usernameInput').value.trim(),password=$('#passwordInput').value;
   if(!username||!password){const missing=!username?$('#usernameInput'):$('#passwordInput');setAuthMessage(`请先填写${!username?'账号':'密码'}，再${action==='register'?'注册':'登录'}。`,'error');missing.focus();return;}
-  setAuthMessage(action==='register'?'正在创建账号…':'正在登录…');
-  try{const response=await fetch('/api/auth',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action,username,password,clientId:deviceId()})});const data=await readAuthResponse(response);if(!response.ok)throw new Error(data.error||'操作未完成。');accountUser=data.user;$('#passwordInput').value='';updateAccountUI();setAuthMessage('登录成功，当前设备的旧记录已同步到账号。','success');await loadHistory();}catch(error){setAuthMessage(error.message||'操作未完成，请稍后再试。','error');}
+  setAuthMessage(action==='register'?'正在安全创建账号…':'正在安全登录…');
+  try{const credentials=await authPayload(action,username,password);const response=await fetch('/api/auth',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action,username,...credentials,clientId:deviceId()})});const data=await readAuthResponse(response);if(!response.ok)throw new Error(data.error||'操作未完成。');accountUser=data.user;$('#passwordInput').value='';updateAccountUI();setAuthMessage('登录成功，当前设备的旧记录已同步到账号。','success');await loadHistory();}catch(error){setAuthMessage(error.message||'操作未完成，请稍后再试。','error');}
 }
 async function logout(){try{await fetch('/api/auth',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'logout'})});accountUser=null;updateAccountUI();setAuthMessage('已退出登录。');await loadHistory()}catch{setAuthMessage('退出失败，请稍后再试。','error')}}
 
