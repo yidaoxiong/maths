@@ -51,12 +51,12 @@ function updateAccountUI(){
   $('#authLoggedOut').classList.toggle('hidden',Boolean(accountUser));$('#authLoggedIn').classList.toggle('hidden',!accountUser);
   if(accountUser){$('#authTitle').textContent='账号同步已开启';$('#accountName').textContent=accountUser.username;}else{$('#authTitle').textContent='登录后可跨设备同步';}
 }
-function openAuth(){const panel=$('#authPanel');panel.classList.remove('hidden');updateAccountUI();if(!accountUser)$('#usernameInput').focus()}
+function openAuth(){const panel=$('#authPanel');panel.classList.remove('hidden');updateAccountUI();panel.scrollIntoView({behavior:'smooth',block:'start'});if(!accountUser){setAuthMessage('注册成功后，本设备已有的练习记录会自动合并到账号。');requestAnimationFrame(()=>$('#usernameInput').focus());}}
 function closeAuth(){$('#authPanel').classList.add('hidden')}
 async function loadAuth(){try{const response=await fetch('/api/auth');const data=await response.json();accountUser=data.user||null;updateAccountUI()}catch{accountUser=null;updateAccountUI()}}
 async function submitAuth(action){
   const username=$('#usernameInput').value.trim(),password=$('#passwordInput').value;
-  if(!username||!password){setAuthMessage('请填写账号和密码。','error');return;}
+  if(!username||!password){const missing=!username?$('#usernameInput'):$('#passwordInput');setAuthMessage(`请先填写${!username?'账号':'密码'}，再${action==='register'?'注册':'登录'}。`,'error');missing.focus();return;}
   setAuthMessage(action==='register'?'正在创建账号…':'正在登录…');
   try{const response=await fetch('/api/auth',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action,username,password,clientId:deviceId()})});const data=await response.json();if(!response.ok)throw new Error(data.error||'操作未完成。');accountUser=data.user;$('#passwordInput').value='';updateAccountUI();setAuthMessage('登录成功，当前设备的旧记录已同步到账号。','success');await loadHistory();}catch(error){setAuthMessage(error.message||'操作未完成，请稍后再试。','error');}
 }
