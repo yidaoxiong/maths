@@ -27,7 +27,24 @@ export async function onRequestGet({ request, env }) {
       FROM practice_sessions WHERE ${where}
      GROUP BY practice_date ORDER BY practice_date DESC LIMIT 60
   `).bind(key).all();
-  return json({ days: results, user: user ? { username: user.username } : null });
+  const { results: typeResults } = await env.DB.prepare(`
+    SELECT practice_date AS date,
+           practice_type AS type,
+           SUM(total_questions) AS total,
+           SUM(correct_answers) AS correct,
+           SUM(elapsed_seconds) AS elapsed,
+           COUNT(*) AS sessions,
+           ROUND(AVG(correct_answers * 100.0 / total_questions)) AS score,
+           CASE WHEN SUM(elapsed_seconds) > 0 THEN ROUND(SUM(total_questions) * 60.0 / SUM(elapsed_seconds), 1) ELSE 0 END AS speed
+      FROM practice_sessions
+     WHERE ${where} AND practice_type IN ('add-subtract', 'multiply-divide', 'smart')
+     GROUP BY practice_date, practice_type
+     ORDER BY practice_date DESC
+     LIMIT 180
+  `).bind(key).all();
+  const categoryDays = { 'add-subtract': [], 'multiply-divide': [], smart: [] };
+  for (const row of typeResults) categoryDays[row.type]?.push(row);
+  return json({ days: results, categoryDays, user: user ? { username: user.username } : null });
 }
 
 export async function onRequestPost({ request, env }) {
