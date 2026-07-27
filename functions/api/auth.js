@@ -1,5 +1,5 @@
 import { ensurePracticeDatabase, isValidClientId } from './_db.js';
-import { clearSession, createSession, ensureAuthTables, getSessionUser, hashPassword, newSalt, validCredentials } from './_auth.js';
+import { clearSession, createSession, ensureAuthTables, getSessionUser, hashPassword, safeEqual, validCredentials, validPasswordProof, validPasswordSalt, validUsername } from './_auth.js';
 
 function json(payload, status = 200, headers = {}) {
   return new Response(JSON.stringify(payload), { status, headers: { 'content-type': 'application/json; charset=utf-8', ...headers } });
@@ -33,18 +33,28 @@ async function handlePost({ request, env }) {
     return json({ ok: true }, 200, { 'Set-Cookie': await clearSession(request, env.DB) });
   }
 
-  if (!validCredentials(body.username, body.password)) return json({ error: '账号为 3–24 个字母、数字或汉字；密码至少 8 位。' }, 400);
+  if (body.action === 'challenge') {
+    if (!validUsername(body.username)) return json({ error: '账号格式不正确。' }, 400);
+    const stored = await env.DB.prepare('SELECT password_salt, password_scheme FROM users WHERE username = ? LIMIT 1').bind(body.username).first();
+    if (!stored) return json({ error: '账号或密码不正确。' }, 401);
+    return json({ scheme: stored.password_scheme, salt: stored.password_scheme === 'client-v1' ? stored.password_salt : null });
+  }
 
   let user;
   if (body.action === 'register') {
+    if (!validUsername(body.username) || !validPasswordProof(body.passwordProof) || !validPasswordSalt(body.passwordSalt)) return json({ error: '账号或密码格式不正确。' }, 400);
     const exists = await env.DB.prepare('SELECT id FROM users WHERE username = ? LIMIT 1').bind(body.username).first();
     if (exists) return json({ error: '这个账号名已经被使用。' }, 409);
-    const salt = newSalt();
     user = { id: crypto.randomUUID(), username: body.username };
-    await env.DB.prepare('INSERT INTO users (id, username, password_hash, password_salt) VALUES (?, ?, ?, ?)').bind(user.id, user.username, await hashPassword(body.password, salt), salt).run();
+    await env.DB.prepare('INSERT INTO users (id, username, password_hash, password_salt, password_scheme) VALUES (?, ?, ?, ?, ?)').bind(user.id, user.username, body.passwordProof, body.passwordSalt, 'client-v1').run();
   } else if (body.action === 'login') {
-    const stored = await env.DB.prepare('SELECT id, username, password_hash, password_salt FROM users WHERE username = ? LIMIT 1').bind(body.username).first();
-    if (!stored || await hashPassword(body.password, stored.password_salt) !== stored.password_hash) return json({ error: '账号或密码不正确。' }, 401);
+    if (!validUsername(body.username)) return json({ error: '账号格式不正确。' }, 400);
+    const stored = await env.DB.prepare('SELECT id, username, password_hash, password_salt, password_scheme FROM users WHERE username = ? LIMIT 1').bind(body.username).first();
+    if (!stored) return json({ error: '账号或密码不正确。' }, 401);
+    const correct = stored.password_scheme === 'client-v1'
+      ? validPasswordProof(body.passwordProof) && safeEqual(body.passwordProof, stored.password_hash)
+      : validCredentials(body.username, body.password) && safeEqual(await hashPassword(body.password, stored.password_salt), stored.password_hash);
+    if (!correct) return json({ error: '账号或密码不正确。' }, 401);
     user = { id: stored.id, username: stored.username };
   } else {
     return json({ error: '请求无效。' }, 400);
