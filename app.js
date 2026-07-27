@@ -6,10 +6,13 @@ const summerDeadline=new Date(2026,7,31,23,59,59);
 const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
 let recognition=null;
 let accountUser=null;
+let categoryHistory={'add-subtract':[],'multiply-divide':[],smart:[]};
+let speedCategory='add-subtract';
+const speedCategoryNames={'add-subtract':'加减法','multiply-divide':'乘除法',smart:'技巧速算'};
 
 document.querySelectorAll('.choice').forEach(button=>button.addEventListener('click',()=>{
   document.querySelectorAll('.choice').forEach(item=>item.classList.remove('selected'));
-  button.classList.add('selected');state.category=button.dataset.operation;
+  button.classList.add('selected');state.category=button.dataset.operation;speedCategory=state.category;renderSpeedView();
 }));
 
 function rand(min,max){return Math.floor(Math.random()*(max-min+1))+min}
@@ -95,14 +98,20 @@ function drawSpeedChart(days){
   points.forEach((point,index)=>{ctx.beginPath();ctx.arc(pointX(index),pointY(point.value),4,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='#ff9770';ctx.stroke();});
   ctx.fillStyle='#94a0b2';ctx.font='10px Nunito, sans-serif';ctx.fillText(formatDay(points[0].date),pad.left,height-6);if(points.length>1){const label=formatDay(points[points.length-1].date);ctx.fillText(label,width-pad.right-ctx.measureText(label).width,height-6);}
 }
-function updateHistory(days=[]){
-  const today=days.find(day=>day.date===localDate()),recent=days.slice(0,7),weekTotal=recent.reduce((sum,day)=>sum+Number(day.total),0);
-  $('#todaySummary').textContent=today?`${today.total} 题 · ${sessionsOf(today)} 次`:'还未练习';$('#weekSummary').textContent=weekTotal?`${weekTotal} 题`:'0 题';updateGoal(today);drawSpeedChart(days);
+function renderSpeedView(){
+  const days=categoryHistory[speedCategory]||[],name=speedCategoryNames[speedCategory];
+  $('#speedCategoryLabel').textContent=`${name}速度曲线`;drawSpeedChart(days);
   const speedDays=days.slice(0,14).reverse().filter(day=>speedOf(day)>0),latest=speedDays[speedDays.length-1],previous=speedDays[speedDays.length-2];
-  $('#speedTrend').textContent=latest?formatSpeed(speedOf(latest)):'暂无数据';$('#speedChange').textContent=latest&&previous?`比上次 ${speedOf(latest)-speedOf(previous)>=0?'+':''}${(speedOf(latest)-speedOf(previous)).toFixed(1)} 题/分`:'完成不同日期的练习后，会看到速度变化';
+  $('#speedTrend').textContent=latest?formatSpeed(speedOf(latest)):'暂无数据';$('#speedChange').textContent=latest&&previous?`比上次 ${speedOf(latest)-speedOf(previous)>=0?'+':''}${(speedOf(latest)-speedOf(previous)).toFixed(1)} 题/分`:`完成${name}练习后，会看到单独的速度变化`;
+  document.querySelectorAll('.speed-category').forEach(button=>button.classList.toggle('selected',button.dataset.speedCategory===speedCategory));
+}
+function updateHistory(days=[],perCategory={}){
+  categoryHistory={'add-subtract':perCategory['add-subtract']||[],'multiply-divide':perCategory['multiply-divide']||[],smart:perCategory.smart||[]};
+  const today=days.find(day=>day.date===localDate()),recent=days.slice(0,7),weekTotal=recent.reduce((sum,day)=>sum+Number(day.total),0);
+  $('#todaySummary').textContent=today?`${today.total} 题 · ${sessionsOf(today)} 次`:'还未练习';$('#weekSummary').textContent=weekTotal?`${weekTotal} 题`:'0 题';updateGoal(today);renderSpeedView();
   $('#historyList').innerHTML=days.length?recent.map(day=>{const score=scoreOf(day),marks=`加${Number(day.add_subtract_done)?'✓':'—'} 乘${Number(day.multiply_divide_done)?'✓':'—'}`;return `<div class="history-day"><span class="history-date">${formatDay(day.date)}</span><span class="history-detail">${marks} · ${sessionsOf(day)} 次 · ${day.total} 题</span><strong class="history-rate ${score<70?'needs-practice':''}">${score} 分</strong></div>`}).join(''):'<p class="history-empty">完成第一组练习后，这里会留下每天的学习足迹和速度变化。</p>';
 }
-async function loadHistory(){try{const response=await fetch(`/api/history?clientId=${encodeURIComponent(deviceId())}`);if(!response.ok)throw new Error('history unavailable');const data=await response.json();if(data.user){accountUser=data.user;updateAccountUI()}updateHistory(data.days||[])}catch{updateGoal();$('#todaySummary').textContent='暂未同步';$('#weekSummary').textContent='—';$('#historyList').innerHTML='<p class="history-empty">学习档案正在准备中，稍后再试即可。</p>';drawSpeedChart([])}}
+async function loadHistory(){try{const response=await fetch(`/api/history?clientId=${encodeURIComponent(deviceId())}`);if(!response.ok)throw new Error('history unavailable');const data=await response.json();if(data.user){accountUser=data.user;updateAccountUI()}updateHistory(data.days||[],data.categoryDays||{})}catch{categoryHistory={'add-subtract':[],'multiply-divide':[],smart:[]};updateGoal();$('#todaySummary').textContent='暂未同步';$('#weekSummary').textContent='—';$('#historyList').innerHTML='<p class="history-empty">学习档案正在准备中，稍后再试即可。</p>';renderSpeedView()}}
 async function saveSession(){try{await fetch('/api/history',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({clientId:deviceId(),date:localDate(),practiceType:state.category,total:state.count,correct:state.score,elapsed:state.elapsed,mistakes:state.mistakes.length})});await loadHistory()}catch{}}
 
 function setVoiceStatus(text,type=''){$('#voiceStatus').textContent=text;$('#voiceStatus').className=`voice-status ${type}`.trim()}
@@ -138,4 +147,5 @@ function gradeAnswer(answer){
 function finish(){clearInterval(state.timerId);state.elapsed=Math.floor((Date.now()-state.startedAt)/1000);quiz.classList.add('hidden');result.classList.remove('hidden');const accuracy=Math.round(state.score/state.count*100);$('#scoreText').textContent=state.score;$('#totalText').textContent=state.count;$('#accuracyText').textContent=`${accuracy}%`;$('#timeText').textContent=formatTime(state.elapsed);$('#mistakeText').textContent=state.mistakes.length;$('#resultTitle').textContent=accuracy>=90?'太厉害了！':accuracy>=70?'做得不错！':'再练一组会更好！';$('#mistakeList').innerHTML=state.mistakes.map(({q,answer})=>`<div class="mistake-item"><span>${q.a} ${q.symbol} ${q.b} = ${answer}</span><span class="right">正确：${q.answer}</span></div>`).join('');saveSession()}
 function goHome(){clearInterval(state.timerId);if(recognition)recognition.abort();result.classList.add('hidden');quiz.classList.add('hidden');setup.classList.remove('hidden')}
 
+document.querySelectorAll('.speed-category').forEach(button=>button.addEventListener('click',()=>{speedCategory=button.dataset.speedCategory;renderSpeedView()}));
 $('#startButton').addEventListener('click',start);$('#answerForm').addEventListener('submit',submitTyped);$('#voiceButton').addEventListener('click',startListening);$('#quitButton').addEventListener('click',goHome);$('#retryButton').addEventListener('click',start);$('#homeButton').addEventListener('click',goHome);$('#accountButton').addEventListener('click',openAuth);$('#closeAuthButton').addEventListener('click',closeAuth);$('#authForm').addEventListener('submit',event=>{event.preventDefault();submitAuth('login')});$('#registerButton').addEventListener('click',()=>submitAuth('register'));$('#logoutButton').addEventListener('click',logout);loadAuth();loadHistory();
