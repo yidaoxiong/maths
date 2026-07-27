@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>小小口算家</title>
-  <link rel="stylesheet" href="styles.css?v=20260727-8" />
+  <link rel="stylesheet" href="styles.css?v=20260727-9" />
 </head>
 <body>
   <main class="app-shell">
@@ -20,8 +20,13 @@
     <section id="authPanel" class="panel auth-panel hidden">
       <div class="section-heading compact-heading"><div><p class="eyebrow">学习账号</p><h2 id="authTitle">登录后可跨设备同步</h2></div><button id="closeAuthButton" class="close-button" type="button" aria-label="关闭账号面板">×</button></div>
       <div id="authLoggedOut">
-        <form id="authForm" class="auth-form"><label for="usernameInput">账号</label><input id="usernameInput" autocomplete="username" maxlength="24" placeholder="3–24 个字母、数字或汉字" required /><label for="passwordInput">密码</label><input id="passwordInput" type="password" autocomplete="current-password" minlength="8" maxlength="72" placeholder="至少 8 位" required /><div class="auth-actions"><button class="primary-button" type="submit">登录</button><button id="registerButton" class="secondary-button" type="button">注册新账号</button></div></form>
-        <p id="authMessage" class="auth-message">首次注册或登录会自动合并本设备已有的练习记录。</p>
+        <p class="auth-intro">先填写账号和密码；第一次使用，请点“注册并登录”。</p>
+        <form id="authForm" class="auth-form">
+          <label class="auth-field" for="usernameInput"><span>账号</span><input id="usernameInput" autocomplete="username" maxlength="24" placeholder="3–24 个字母、数字或汉字" required /></label>
+          <label class="auth-field" for="passwordInput"><span>密码</span><input id="passwordInput" type="password" autocomplete="current-password" minlength="8" maxlength="72" placeholder="至少 8 位" required /></label>
+          <div class="auth-actions"><button class="primary-button" type="submit">登录已有账号</button><button id="registerButton" class="secondary-button" type="button">注册并登录</button></div>
+        </form>
+        <p id="authMessage" class="auth-message">注册成功后，本设备已有的练习记录会自动合并到账号。</p>
       </div>
       <div id="authLoggedIn" class="hidden"><p class="account-welcome">已登录：<strong id="accountName"></strong></p><p class="auth-message">现在的练习记录会同步到这个账号，可在其他设备登录查看。</p><button id="logoutButton" class="secondary-button" type="button">退出登录</button></div>
     </section>
@@ -96,6 +101,6 @@
     </section>
     <footer>每天一点点，计算更准确 ✦</footer>
   </main>
-  <script src="app.js?v=20260727-8"></script>
+  <script src="app.js?v=20260727-9"></script>
 </body>
 </html>
