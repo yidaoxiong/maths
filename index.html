@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>小小口算家</title>
-  <link rel="stylesheet" href="styles.css?v=20260727-9" />
+  <link rel="stylesheet" href="styles.css?v=20260727-12" />
 </head>
 <body>
   <main class="app-shell">
@@ -71,7 +71,8 @@
         <div><span>近 7 天</span><strong id="weekSummary">正在读取…</strong></div>
       </div>
       <div class="speed-card">
-        <div class="speed-heading"><div><span>速度进步曲线</span><strong id="speedTrend">暂无数据</strong></div><small id="speedChange">完成练习后会显示每分钟题数</small></div>
+        <div class="speed-heading"><div><span id="speedCategoryLabel">加减法速度曲线</span><strong id="speedTrend">暂无数据</strong></div><small id="speedChange">完成练习后会显示每分钟题数</small></div>
+        <div id="speedCategoryChoices" class="speed-category-choices" aria-label="选择速度曲线类别"><button class="speed-category selected" data-speed-category="add-subtract" type="button">加减法</button><button class="speed-category" data-speed-category="multiply-divide" type="button">乘除法</button><button class="speed-category" data-speed-category="smart" type="button">技巧速算</button></div>
         <canvas id="speedChart" height="130" aria-label="近 14 天口算速度变化曲线" role="img"></canvas>
       </div>
       <div id="historyList" class="history-list" aria-live="polite"></div>
@@ -101,6 +102,6 @@
     </section>
     <footer>每天一点点，计算更准确 ✦</footer>
   </main>
-  <script src="app.js?v=20260727-11"></script>
+  <script src="app.js?v=20260727-12"></script>
 </body>
 </html>
