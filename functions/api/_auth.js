@@ -1,5 +1,8 @@
 const encoder = new TextEncoder();
 const SESSION_MAX_AGE = 60 * 60 * 24 * 30;
+const SHARED_COOKIE = 'slashbro_session';
+const LEGACY_COOKIE = 'maths_session';
+const COOKIE_SUFFIX = 'Max-Age=' + SESSION_MAX_AGE + '; Domain=slashbro.top; Path=/; HttpOnly; Secure; SameSite=Lax';
 
 function bytesToBase64Url(bytes) {
   let binary = '';
@@ -22,16 +25,14 @@ export async function hashPassword(password, salt) {
   return bytesToBase64Url(new Uint8Array(bits));
 }
 
-export function newSalt() {
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-  return bytesToBase64Url(bytes);
-}
-
 function parseCookie(request, name) {
   const value = request.headers.get('Cookie') || '';
   const part = value.split(';').map(item => item.trim()).find(item => item.startsWith(`${name}=`));
   return part ? part.slice(name.length + 1) : null;
+}
+
+function sessionTokens(request) {
+  return [...new Set([parseCookie(request, SHARED_COOKIE), parseCookie(request, LEGACY_COOKIE)].filter(Boolean))];
 }
 
 export async function ensureAuthTables(db) {
@@ -59,13 +60,19 @@ export async function ensureAuthTables(db) {
 }
 
 export async function getSessionUser(request, db) {
-  const token = parseCookie(request, 'maths_session');
-  if (!token) return null;
-  const tokenHash = await sha256(token);
-  return db.prepare(`SELECT users.id, users.username
-      FROM auth_sessions JOIN users ON users.id = auth_sessions.user_id
-     WHERE auth_sessions.token_hash = ? AND auth_sessions.expires_at > ?
-     LIMIT 1`).bind(tokenHash, new Date().toISOString()).first();
+  for (const token of sessionTokens(request)) {
+    const user = await db.prepare(`SELECT users.id, users.username
+        FROM auth_sessions JOIN users ON users.id = auth_sessions.user_id
+       WHERE auth_sessions.token_hash = ? AND auth_sessions.expires_at > ?
+       LIMIT 1`).bind(await sha256(token), new Date().toISOString()).first();
+    if (user) return user;
+  }
+  return null;
+}
+
+export function refreshSharedSessionCookie(request) {
+  const token = sessionTokens(request)[0];
+  return token ? `${SHARED_COOKIE}=${token}; ${COOKIE_SUFFIX}` : null;
 }
 
 export async function createSession(db, userId) {
@@ -77,13 +84,18 @@ export async function createSession(db, userId) {
     db.prepare('DELETE FROM auth_sessions WHERE expires_at <= ?').bind(new Date().toISOString()),
     db.prepare('INSERT INTO auth_sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)').bind(await sha256(token), userId, expiresAt),
   ]);
-  return `maths_session=${token}; Max-Age=${SESSION_MAX_AGE}; Path=/; HttpOnly; Secure; SameSite=Lax`;
+  return `${SHARED_COOKIE}=${token}; ${COOKIE_SUFFIX}`;
 }
 
 export async function clearSession(request, db) {
-  const token = parseCookie(request, 'maths_session');
-  if (token) await db.prepare('DELETE FROM auth_sessions WHERE token_hash = ?').bind(await sha256(token)).run();
-  return 'maths_session=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax';
+  for (const token of sessionTokens(request)) {
+    await db.prepare('DELETE FROM auth_sessions WHERE token_hash = ?').bind(await sha256(token)).run();
+  }
+  return [
+    `${SHARED_COOKIE}=; Max-Age=0; Domain=slashbro.top; Path=/; HttpOnly; Secure; SameSite=Lax`,
+    `${LEGACY_COOKIE}=; Max-Age=0; Domain=slashbro.top; Path=/; HttpOnly; Secure; SameSite=Lax`,
+    `${LEGACY_COOKIE}=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax`,
+  ];
 }
 
 export function validCredentials(username, password) {

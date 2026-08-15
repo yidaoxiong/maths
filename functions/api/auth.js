@@ -1,8 +1,10 @@
 import { ensurePracticeDatabase, isValidClientId } from './_db.js';
-import { clearSession, createSession, ensureAuthTables, getSessionUser, hashPassword, safeEqual, validCredentials, validPasswordProof, validPasswordSalt, validUsername } from './_auth.js';
+import { clearSession, createSession, ensureAuthTables, getSessionUser, hashPassword, refreshSharedSessionCookie, safeEqual, validCredentials, validPasswordProof, validPasswordSalt, validUsername } from './_auth.js';
 
-function json(payload, status = 200, headers = {}) {
-  return new Response(JSON.stringify(payload), { status, headers: { 'content-type': 'application/json; charset=utf-8', ...headers } });
+function json(payload, status = 200, cookies = []) {
+  const headers = new Headers({ 'content-type': 'application/json; charset=utf-8' });
+  for (const cookie of cookies) headers.append('Set-Cookie', cookie);
+  return new Response(JSON.stringify(payload), { status, headers });
 }
 
 async function linkDeviceHistory(db, userId, clientId) {
@@ -13,7 +15,8 @@ async function linkDeviceHistory(db, userId, clientId) {
 export async function onRequestGet({ request, env }) {
   await ensureAuthTables(env.DB);
   const user = await getSessionUser(request, env.DB);
-  return json({ user: user || null });
+  const cookie = user ? refreshSharedSessionCookie(request) : null;
+  return json({ user: user || null }, 200, cookie ? [cookie] : []);
 }
 
 export async function onRequestPost(context) {
@@ -30,7 +33,7 @@ async function handlePost({ request, env }) {
   await ensureAuthTables(env.DB);
 
   if (body.action === 'logout') {
-    return json({ ok: true }, 200, { 'Set-Cookie': await clearSession(request, env.DB) });
+    return json({ ok: true }, 200, await clearSession(request, env.DB));
   }
 
   if (body.action === 'challenge') {
@@ -62,5 +65,5 @@ async function handlePost({ request, env }) {
 
   await ensurePracticeDatabase(env.DB);
   await linkDeviceHistory(env.DB, user.id, body.clientId);
-  return json({ user }, 200, { 'Set-Cookie': await createSession(env.DB, user.id) });
+  return json({ user }, 200, [await createSession(env.DB, user.id)]);
 }
